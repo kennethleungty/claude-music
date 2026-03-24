@@ -39,7 +39,18 @@ brew install mpv
 If Homebrew isn't installed, tell the user to install it first: https://brew.sh
 
 ### Linux (not WSL)
-Use the detected package manager:
+
+**First, check if the user has sudo access:**
+```bash
+sudo -n true 2>/dev/null && echo "has_sudo" || echo "no_sudo"
+```
+
+**If no sudo access, try these no-sudo methods first (in order):**
+1. Homebrew (linuxbrew): `brew install mpv`
+2. Conda: `conda install -c conda-forge mpv`
+3. Nix: `nix-env -iA nixpkgs.mpv`
+
+**If the user has sudo access, use the system package manager:**
 | Package Manager | Command |
 |----------------|---------|
 | apt | `sudo apt update && sudo apt install -y mpv` |
@@ -47,7 +58,18 @@ Use the detected package manager:
 | pacman | `sudo pacman -S --noconfirm mpv` |
 | apk | `sudo apk add mpv` |
 | zypper | `sudo zypper install -y mpv` |
+| snap | `sudo snap install mpv` |
 | brew | `brew install mpv` |
+
+**If no sudo and no alternative package managers**, download a static ffplay binary (no root needed):
+```bash
+mkdir -p "$HOME/.local/bin"
+curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ --strip-components=1 -C "$HOME/.local/bin/" --wildcards '*/ffplay'
+chmod +x "$HOME/.local/bin/ffplay"
+```
+Then ensure `~/.local/bin` is in PATH. ffplay is part of ffmpeg and can play streams just like mpv.
+
+Alternatively, suggest installing Homebrew for Linux (which doesn't need root): https://brew.sh
 
 If mpv fails, try ffmpeg (includes ffplay) as fallback using the same package manager.
 
@@ -74,9 +96,10 @@ wsl --shutdown
 ```
 Then restart WSL.
 
-**Audio player:** There are two strategies:
-1. **Install mpv inside WSL** (preferred if WSLg audio works): `sudo apt install -y mpv`
-2. **Use Windows-side mpv.exe** (works even without WSLg audio):
+**Audio player:** There are three strategies (try in order):
+1. **Install mpv inside WSL with sudo** (preferred if WSLg audio works and user has sudo): `sudo apt install -y mpv`
+2. **Install mpv inside WSL without sudo** (if no sudo): try `brew install mpv`, `conda install -c conda-forge mpv`, or `nix-env -iA nixpkgs.mpv`
+3. **Use Windows-side mpv.exe** (works even without WSLg audio):
    - Check if mpv.exe is already on Windows: `command -v mpv.exe`
    - If not, tell the user to install mpv on Windows via `winget install mpv` or `scoop install mpv` in PowerShell
 
