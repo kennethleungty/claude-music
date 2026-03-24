@@ -2,15 +2,18 @@
 set -euo pipefail
 
 # SessionStart hook for claude-music plugin
-# Initializes preferences, auto-plays music, injects context into session
+# Deterministic platform/audio check — no LLM calls, no installs
+# Injects platform state into session so Claude knows what to do
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CONTROLLER="$PLUGIN_ROOT/scripts/music-controller.sh"
+PLATFORM_DETECT="$PLUGIN_ROOT/scripts/platform-detect.sh"
+SETUP_AUDIO="$PLUGIN_ROOT/scripts/setup-audio.sh"
 DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.claude-music}"
 PREFS_FILE="$DATA_DIR/preferences.json"
 
-# Ensure data directory and preferences exist
+# ---- Initialize preferences ----
 mkdir -p "$DATA_DIR"
 if [ ! -f "$PREFS_FILE" ]; then
     cat > "$PREFS_FILE" <<'EOF'
@@ -23,44 +26,131 @@ if [ ! -f "$PREFS_FILE" ]; then
 EOF
 fi
 
-# Detect available player
+# ---- Deterministic platform & audio detection ----
+PLATFORM_JSON=$("$PLATFORM_DETECT" 2>/dev/null || echo '{}')
+AUDIO_JSON=$("$SETUP_AUDIO" check 2>/dev/null || echo '{"audio_working": false}')
+
+# Extract fields via python3 (fallback to safe defaults)
+if command -v python3 &>/dev/null; then
+    read_json() { echo "$1" | python3 -c "import json,sys; print(json.load(sys.stdin).get('$2','$3'))" 2>/dev/null || echo "$3"; }
+    PLATFORM_OS=$(read_json "$PLATFORM_JSON" os unknown)
+    PLATFORM_WSL=$(read_json "$PLATFORM_JSON" is_wsl False)
+    PLATFORM_PKG=$(read_json "$PLATFORM_JSON" pkg_manager "")
+    PLATFORM_PLAYERS=$(read_json "$PLATFORM_JSON" available_players "")
+    PLATFORM_AUDIO_BACKEND=$(read_json "$PLATFORM_JSON" audio_backend none)
+    AUDIO_WORKING=$(read_json "$AUDIO_JSON" audio_working False)
+    AUDIO_METHOD=$(read_json "$AUDIO_JSON" method none)
+else
+    PLATFORM_OS="unknown"; PLATFORM_WSL="False"; PLATFORM_PKG=""
+    PLATFORM_PLAYERS=""; PLATFORM_AUDIO_BACKEND="none"
+    AUDIO_WORKING="False"; AUDIO_METHOD="none"
+fi
+
+# Check for a usable player via controller
 PLAYER=$("$CONTROLLER" detect-player 2>/dev/null || echo "none")
 
-# Load preferences
-PREFS=$("$CONTROLLER" load-prefs 2>/dev/null || echo "genre=lofi volume=70 autoplay=true player=auto")
+# ---- Determine what's missing ----
+MISSING=""
+INSTALL_HINT=""
+
+# Missing player?
+if [ "$PLAYER" = "none" ]; then
+    MISSING="player"
+    HAS_SUDO=false
+    if sudo -n true 2>/dev/null; then
+        HAS_SUDO=true
+    fi
+
+    # Prefer no-sudo methods, then fall back to sudo if available
+    if command -v brew &>/dev/null; then
+        INSTALL_HINT="brew install mpv"
+    elif command -v conda &>/dev/null; then
+        INSTALL_HINT="conda install -c conda-forge mpv"
+    elif command -v nix-env &>/dev/null; then
+        INSTALL_HINT="nix-env -iA nixpkgs.mpv"
+    elif [ "$HAS_SUDO" = true ]; then
+        case "$PLATFORM_PKG" in
+            apt)    INSTALL_HINT="sudo apt update && sudo apt install -y mpv" ;;
+            dnf)    INSTALL_HINT="sudo dnf install -y mpv" ;;
+            pacman) INSTALL_HINT="sudo pacman -S --noconfirm mpv" ;;
+            apk)    INSTALL_HINT="sudo apk add mpv" ;;
+            zypper) INSTALL_HINT="sudo zypper install -y mpv" ;;
+            snap)   INSTALL_HINT="sudo snap install mpv" ;;
+            *)      INSTALL_HINT="sudo apt update && sudo apt install -y mpv" ;;
+        esac
+    elif command -v snap &>/dev/null; then
+        INSTALL_HINT="sudo snap install mpv (requires sudo — ask an admin if needed)"
+    else
+        case "$PLATFORM_PKG" in
+            winget) INSTALL_HINT="winget install mpv" ;;
+            scoop)  INSTALL_HINT="scoop install mpv" ;;
+            choco)  INSTALL_HINT="choco install mpv" ;;
+            *)      INSTALL_HINT="Install mpv from https://mpv.io/installation/ (or ask an admin to run: sudo apt install -y mpv)" ;;
+        esac
+    fi
+fi
+
+# Missing audio backend? (especially relevant on WSL)
+if [ "$AUDIO_WORKING" = "False" ]; then
+    if [ -n "$MISSING" ]; then
+        MISSING="$MISSING,audio"
+    else
+        MISSING="audio"
+    fi
+fi
+
+# ---- Load preferences & attempt autoplay ----
+PREFS=$("$CONTROLLER" load-prefs 2>/dev/null || echo "genre=lofi volume=70 autoplay=false player=auto")
 AUTOPLAY=$(echo "$PREFS" | grep -o 'autoplay=[^ ]*' | cut -d= -f2)
 GENRE=$(echo "$PREFS" | grep -o 'genre=[^ ]*' | cut -d= -f2)
 
-# Auto-play if enabled and a player is available
 MUSIC_STATUS="no_player"
 STATION=""
 if [ "$PLAYER" != "none" ]; then
     if [ "$AUTOPLAY" = "true" ]; then
         PLAY_RESULT=$("$CONTROLLER" play "$GENRE" 2>/dev/null || echo '{"status":"error"}')
         MUSIC_STATUS="playing"
-        # Extract station name from result
         if command -v python3 &>/dev/null; then
-            STATION=$(echo "$PLAY_RESULT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('station',''))" 2>/dev/null || echo "")
+            STATION=$(read_json "$PLAY_RESULT" station "")
         fi
     else
         MUSIC_STATUS="ready"
     fi
 fi
 
-# Build context message
+# ---- Build context message ----
 CONTEXT="Background music plugin (claude-music) is active."
-if [ "$MUSIC_STATUS" = "playing" ]; then
-    CONTEXT="$CONTEXT Music is now playing: $GENRE"
-    [ -n "$STATION" ] && CONTEXT="$CONTEXT ($STATION)"
-    CONTEXT="$CONTEXT."
-elif [ "$MUSIC_STATUS" = "ready" ]; then
-    CONTEXT="$CONTEXT Music is ready but autoplay is off. Use /claude-music:play to start."
-elif [ "$MUSIC_STATUS" = "no_player" ]; then
-    CONTEXT="$CONTEXT No audio player found. You MUST invoke the claude-music:setup agent to automatically detect the platform and install mpv (or ffmpeg as fallback). Do this before anything else."
-fi
-CONTEXT="$CONTEXT Controls: /claude-music:play, /claude-music:stop, /claude-music:pause, /claude-music:resume, /claude-music:next, /claude-music:set-genre, /claude-music:music-status"
+CONTEXT="$CONTEXT Environment: os=$PLATFORM_OS wsl=$PLATFORM_WSL pkg=$PLATFORM_PKG audio=$AUDIO_METHOD($AUDIO_WORKING) players=[$PLATFORM_PLAYERS]."
 
-# Escape for JSON
+if [ -z "$MISSING" ]; then
+    # Everything is good
+    if [ "$MUSIC_STATUS" = "playing" ]; then
+        CONTEXT="$CONTEXT Music is now playing: $GENRE"
+        [ -n "$STATION" ] && CONTEXT="$CONTEXT ($STATION)"
+        CONTEXT="$CONTEXT."
+    elif [ "$MUSIC_STATUS" = "ready" ]; then
+        CONTEXT="$CONTEXT Ready to play. Use /claude-music:play to start."
+    fi
+else
+    # Something is missing — give Claude the info to relay to the user quickly
+    CONTEXT="$CONTEXT SETUP NEEDED (missing: $MISSING)."
+    CONTEXT="$CONTEXT TONE: Present this warmly — music is almost ready to go, we just need a quick setup step first."
+    if [[ "$MISSING" == *"player"* ]]; then
+        CONTEXT="$CONTEXT No audio player (mpv or ffplay) is installed. Install command: $INSTALL_HINT"
+        if [ "$HAS_SUDO" = true ]; then
+            CONTEXT="$CONTEXT User has sudo — if they ask to play music, just run the install command directly and then start playback. No setup agent needed."
+        else
+            CONTEXT="$CONTEXT User does NOT have sudo — if they ask to play music, automatically download a static ffplay binary to ~/.local/bin (no root needed) and start playback. No setup agent, no asking — just do it."
+        fi
+    fi
+    if [[ "$MISSING" == *"audio"* ]] && [ "$PLATFORM_WSL" = "True" ]; then
+        CONTEXT="$CONTEXT WSL2 audio output is not set up yet — dispatch the setup agent for WSL audio configuration help."
+    fi
+fi
+
+CONTEXT="$CONTEXT Commands: /claude-music:play, /claude-music:stop, /claude-music:next, /claude-music:status, /claude-music:list, /claude-music:vibe, /claude-music:say, /claude-music:volume, /claude-music:help"
+
+# ---- Output JSON for Claude Code ----
 escape_for_json() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -72,8 +162,6 @@ escape_for_json() {
 }
 
 CONTEXT_ESCAPED=$(escape_for_json "$CONTEXT")
-
-# Output JSON for Claude Code context injection
 printf '{\n  "hookSpecificOutput": {\n    "additionalContext": "%s"\n  }\n}\n' "$CONTEXT_ESCAPED"
 
 exit 0

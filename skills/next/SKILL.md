@@ -1,6 +1,6 @@
 ---
 name: next
-description: Skip to next radio stream or track within the current genre
+description: Skip to a different stream URL within the current genre (does not change genre)
 disable-model-invocation: true
 ---
 

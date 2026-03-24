@@ -1,5 +1,5 @@
 ---
-name: music-status
+name: status
 description: Show current music playback status — what's playing, genre, station, and volume
 disable-model-invocation: true
 ---
@@ -17,7 +17,7 @@ Run:
 ```
 
 Format the JSON output nicely for the user, showing:
-- **Status**: playing / paused / stopped
+- **Status**: playing / stopped
 - **Genre**: current genre
 - **Station**: radio station name
 - **Now Playing**: current track (if available from mpv metadata)

@@ -11,6 +11,7 @@ DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.claude-music}"
 PREFS_FILE="$DATA_DIR/preferences.json"
 STATE_FILE="$DATA_DIR/state.json"
 PID_FILE="$DATA_DIR/player.pid"
+WATCHDOG_PID_FILE="$DATA_DIR/watchdog.pid"
 MPV_SOCK="$DATA_DIR/mpv.sock"
 STATIONS_FILE="$PLUGIN_ROOT/config/stations.yml"
 MUSIC_DIR="$PLUGIN_ROOT/music"
@@ -207,7 +208,60 @@ get_pid() {
     fi
 }
 
+find_session_tty() {
+    # Walk up process tree to find an ancestor with a TTY (the user's terminal)
+    local pid=$$
+    local tty=""
+    while [ "$pid" -gt 1 ] 2>/dev/null; do
+        tty=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+        if [ -n "$tty" ] && [ "$tty" != "?" ]; then
+            echo "$tty"
+            return 0
+        fi
+        pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    done
+    return 1
+}
+
+start_watchdog() {
+    local player_pid="$1"
+    local tty_dev
+    tty_dev=$(find_session_tty 2>/dev/null || echo "")
+
+    # If we can't find a TTY, nothing to monitor
+    if [ -z "$tty_dev" ]; then
+        return
+    fi
+
+    (
+        while sleep 5; do
+            # Player already dead — clean up and exit
+            if ! kill -0 "$player_pid" 2>/dev/null; then
+                rm -f "$PID_FILE" "$WATCHDOG_PID_FILE"
+                exit 0
+            fi
+            # Terminal gone — kill the player
+            if [ ! -e "/dev/$tty_dev" ]; then
+                kill "$player_pid" 2>/dev/null
+                sleep 0.2
+                kill -9 "$player_pid" 2>/dev/null
+                rm -f "$PID_FILE" "$WATCHDOG_PID_FILE" "$MPV_SOCK"
+                exit 0
+            fi
+        done
+    ) &>/dev/null &
+    echo $! > "$WATCHDOG_PID_FILE"
+    disown $! 2>/dev/null || true
+}
+
 kill_player() {
+    # Kill watchdog first
+    if [ -f "$WATCHDOG_PID_FILE" ]; then
+        local wpid
+        wpid=$(cat "$WATCHDOG_PID_FILE")
+        kill "$wpid" 2>/dev/null || true
+        rm -f "$WATCHDOG_PID_FILE"
+    fi
     if [ -f "$PID_FILE" ]; then
         local pid
         pid=$(cat "$PID_FILE")
@@ -240,6 +294,7 @@ EOF
 
 get_stream_url() {
     local genre="${1:-lofi}"
+    local prefer_http="${2:-false}"
     if [ ! -f "$STATIONS_FILE" ]; then
         echo ""
         return 1
@@ -247,7 +302,12 @@ get_stream_url() {
     yaml_query "
 import random
 streams = data.get('$genre', {}).get('streams', [])
+prefer_http = '$prefer_http' == 'true'
 if streams:
+    if prefer_http:
+        http_streams = [s for s in streams if s['url'].startswith('http://')]
+        if http_streams:
+            streams = http_streams
     print(random.choice(streams)['url'])
 else:
     sys.exit(1)
@@ -325,17 +385,53 @@ do_play() {
     # Stop existing playback
     kill_player
 
-    # Detect player
+    # Detect a usable player (mpv preferred, ffplay as fallback)
     local player
     player=$(detect_player)
     if [ "$player" = "none" ]; then
-        echo '{"error": "No audio player found. Install mpv: brew install mpv (macOS) or apt install mpv (Linux)"}'
+        local install_hint=""
+        local has_sudo=false
+        if sudo -n true 2>/dev/null; then
+            has_sudo=true
+        fi
+
+        # Prefer no-sudo methods, then fall back to sudo
+        if command -v brew &>/dev/null; then
+            install_hint="brew install mpv"
+        elif command -v conda &>/dev/null; then
+            install_hint="conda install -c conda-forge mpv"
+        elif command -v nix-env &>/dev/null; then
+            install_hint="nix-env -iA nixpkgs.mpv"
+        elif [ "$has_sudo" = true ]; then
+            if command -v apt &>/dev/null; then
+                install_hint="sudo apt update && sudo apt install -y mpv"
+            elif command -v dnf &>/dev/null; then
+                install_hint="sudo dnf install -y mpv"
+            elif command -v pacman &>/dev/null; then
+                install_hint="sudo pacman -S --noconfirm mpv"
+            elif command -v snap &>/dev/null; then
+                install_hint="sudo snap install mpv"
+            fi
+        fi
+
+        # No-sudo static binary fallback: ffplay from ffmpeg static builds
+        local nosudo_hint="curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ --strip-components=1 -C \$HOME/.local/bin/ --wildcards '*/ffplay'"
+
+        if [ -z "$install_hint" ]; then
+            install_hint="$nosudo_hint"
+        fi
+
+        echo "{\"error\": \"Music is all queued up, but no audio player (mpv or ffplay) is installed yet. Want me to set it up?\", \"install_command\": \"$install_hint\", \"nosudo_hint\": \"$nosudo_hint\", \"has_sudo\": $has_sudo}"
         return 1
     fi
 
-    # Try stream first
+    # Try stream first (PowerShell can't handle HTTPS streams, prefer HTTP)
     local url="" source="stream" stream_name=""
-    url=$(get_stream_url "$genre" 2>/dev/null || echo "")
+    local prefer_http="False"
+    if [ "$player" = "powershell.exe" ]; then
+        prefer_http="True"
+    fi
+    url=$(get_stream_url "$genre" "$prefer_http" 2>/dev/null || echo "")
 
     if [ -n "$url" ] && check_stream_reachable "$url"; then
         source="stream"
@@ -439,8 +535,9 @@ do_play() {
             ;;
     esac
 
-    # Save PID and state
+    # Save PID and start watchdog to kill player when terminal closes
     echo "$pid" > "$PID_FILE"
+    start_watchdog "$pid"
     save_state "playing" "$genre" "$url" "$player" "$pid"
 
     # Update preferred genre
@@ -459,44 +556,6 @@ do_stop() {
     else
         echo "{\"status\": \"already_stopped\"}"
     fi
-}
-
-do_pause() {
-    if is_playing; then
-        local pid
-        pid=$(get_pid)
-        local state
-        state=$(ps -o state= -p "$pid" 2>/dev/null || echo "")
-        if [ "$state" = "T" ]; then
-            echo "{\"status\": \"already_paused\"}"
-            return 0
-        fi
-        kill -STOP "$pid" 2>/dev/null
-        if [ -f "$STATE_FILE" ]; then
-            json_set "$STATE_FILE" "status" "paused"
-        fi
-        echo "{\"status\": \"paused\"}"
-    else
-        echo "{\"error\": \"Nothing is playing\"}"
-        return 1
-    fi
-}
-
-do_resume() {
-    if [ -f "$PID_FILE" ]; then
-        local pid
-        pid=$(get_pid)
-        if kill -0 "$pid" 2>/dev/null; then
-            kill -CONT "$pid" 2>/dev/null
-            if [ -f "$STATE_FILE" ]; then
-                json_set "$STATE_FILE" "status" "playing"
-            fi
-            echo "{\"status\": \"resumed\"}"
-            return 0
-        fi
-    fi
-    echo "{\"error\": \"Nothing to resume\"}"
-    return 1
 }
 
 do_next() {
@@ -520,21 +579,10 @@ do_status() {
     fi
 
     # Verify PID is actually alive
-    if [ "$status" = "playing" ] || [ "$status" = "paused" ]; then
+    if [ "$status" = "playing" ]; then
         if ! is_playing; then
             status="stopped"
             save_state "stopped" "$genre" "" "" ""
-        fi
-    fi
-
-    # Check actual pause state
-    if [ "$status" = "playing" ] && is_playing; then
-        local pid
-        pid=$(get_pid)
-        local ps_state
-        ps_state=$(ps -o state= -p "$pid" 2>/dev/null || echo "")
-        if [ "$ps_state" = "T" ]; then
-            status="paused"
         fi
     fi
 
@@ -603,8 +651,6 @@ do_save_pref() {
 case "${1:-help}" in
     play)           do_play "${2:-}" ;;
     stop)           do_stop ;;
-    pause)          do_pause ;;
-    resume)         do_resume ;;
     next)           do_next ;;
     status)         do_status ;;
     detect-player)  detect_player ;;
@@ -616,11 +662,9 @@ case "${1:-help}" in
 claude-music controller
 
 Commands:
-  play [genre]        Start playback (lofi|jazz|classical|ambient)
+  play [genre]        Start playback (lofi|jazz|classical|ambient|edm)
   stop                Stop playback
-  pause               Pause playback
-  resume              Resume playback
-  next                Skip to next stream/track
+  next                Skip to next stream in current genre
   status              Show current playback status
   detect-player       Show detected audio player
   load-prefs          Show current preferences

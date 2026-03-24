@@ -24,12 +24,6 @@ if [ -f "$STATE_FILE" ] && [ -f "$PID_FILE" ]; then
         GENRE=$(jq -r '.genre // ""' "$STATE_FILE" 2>/dev/null || echo "")
         PLAYER=$(jq -r '.player // ""' "$STATE_FILE" 2>/dev/null || echo "")
 
-        # Check if paused
-        PS_STATE=$(ps -o state= -p "$PID" 2>/dev/null || echo "")
-        if [ "$PS_STATE" = "T" ]; then
-            STATUS="paused"
-        fi
-
         # Get station name from streams.json
         URL=$(jq -r '.url // ""' "$STATE_FILE" 2>/dev/null || echo "")
         PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
@@ -54,8 +48,6 @@ if [ -f "$STATE_FILE" ] && [ -f "$PID_FILE" ]; then
         # Build the display string
         if [ "$STATUS" = "playing" ]; then
             ICON="\033[32m♪\033[0m"  # green note
-        elif [ "$STATUS" = "paused" ]; then
-            ICON="\033[33m⏸\033[0m"  # yellow pause
         else
             ICON=""
         fi
