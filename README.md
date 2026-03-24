@@ -78,7 +78,7 @@ The plugin auto-detects your platform and available audio players. If nothing is
 
 ## Offline Mode
 
-No internet? Add local MP3 files to `config/stations.yml` under any genre:
+No internet? Add local MP3 files to `config/sources.yml` under any genre:
 
 ```yaml
 lofi:

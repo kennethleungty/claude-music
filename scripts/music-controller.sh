@@ -13,7 +13,7 @@ STATE_FILE="$DATA_DIR/state.json"
 PID_FILE="$DATA_DIR/player.pid"
 WATCHDOG_PID_FILE="$DATA_DIR/watchdog.pid"
 MPV_SOCK="$DATA_DIR/mpv.sock"
-STATIONS_FILE="$PLUGIN_ROOT/config/stations.yml"
+STATIONS_FILE="$PLUGIN_ROOT/config/sources.yml"
 MUSIC_DIR="$PLUGIN_ROOT/music"
 
 # ============================================================================
@@ -49,7 +49,7 @@ with open('$file','w') as f: json.dump(d,f,indent=2)
 }
 
 # ============================================================================
-# YAML query helper — parses stations.yml via Python3
+# YAML query helper — parses sources.yml via Python3
 # ============================================================================
 
 yaml_query() {
