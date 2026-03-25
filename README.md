@@ -1,4 +1,4 @@
-# Music for Coding Agent Sessions
+# Code Music - Enjoy Music in your Coding Agent Sessions
 
 Enjoy lovely background music while your AI coding agents do the heavy lifting. Lofi, jazz, classical, ambient, and more — streaming live from the internet, right in your terminal.
 
@@ -55,7 +55,7 @@ Or let the AI DJ pick for you:
 
 ```
 /vibe                            # DJ reads your session and picks automatically
-/say feeling tired, need energy  # Tell the DJ your mood in your own words
+/mood feeling tired, need energy  # Tell the DJ your mood in your own words
 ```
 
 Or start a focus session with a timer:
@@ -70,18 +70,18 @@ Or start a focus session with a timer:
 The plugin includes our resident DJ agent (DJ Ken) that picks the right music for you. He learns your preferences over time — the more you use it, the better it gets.
 
 - **`/vibe`** — The DJ reads your current session automatically. Debugging? It switches to lofi. Deep in a code review? Classical kicks in. No input needed, it figures it out.
-- **`/say <mood>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
+- **`/mood <feeling>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
 - **`/prefs`** — See what the plugin has learned about your preferences.
 
 ## Genres
 
 | Genre | Vibe | Great for | Stations |
 |-------|------|-----------|----------|
-| **lofi** | Chill downtempo beats, mellow vibes | Focused coding, debugging, writing tests | 3 |
+| **lofi** | Chill downtempo beats, mellow vibes | Focused coding, debugging, writing tests | 2 |
 | **jazz** | Smooth jazz, bossa nova, instrumental | Building features, refactoring | 4 |
 | **classical** | Orchestral, chamber music, deep focus | Code review, reading, research | 4 |
 | **ambient** | Atmospheric drones, space music | Brainstorming, design, creative work | 5 |
-| **electronic** | Electronic, trance, IDM, dubstep, trip-hop | Shipping sprints, high-energy sessions | 5 |
+| **electronic** | Electronic, trance, IDM, dubstep, trip-hop | Shipping sprints, high-energy sessions | 6 |
 | **synthwave** | Retro-futuristic, 80s-inspired | Late night coding, nostalgic vibes | 4 |
 | **lounge** | Cinematic, spy-movie elegance | Demos, presentations, smooth backdrop | 2 |
 | **indie** | Indie pop, folk, dream pop | Creative writing, docs, warm sessions | 4 |
@@ -95,17 +95,23 @@ Each genre has multiple stations. Use `/next` to cycle through them.
 | `/play [genre or station]` | Start playing by genre or station name |
 | `/stop` | Stop the music and show session stats |
 | `/next` | Switch to a different station (same genre) |
+| `/prev` | Go back to the previous station |
+| `/now` | See what's playing right now (alias for `/status`) |
+| `/pause` | Stop the music (alias for `/stop`) |
+| `/mute` | Stop the music (alias for `/stop`) |
 | `/vibe` | AI DJ reads your session and picks the best genre |
 | `/dj` | Same as `/vibe` |
-| `/say <mood>` | Tell the DJ your mood and it picks the right music |
+| `/mood <feeling>` | Tell the DJ how you're feeling and it picks the right music |
 | `/focus [min] [genre]` | Pomodoro timer with music (default 25 min) |
 | `/pomodoro` | Same as `/focus` |
 | `/volume [0-100]` | Set volume, or show current if no number given |
 | `/status` | See what's playing right now |
-| `/list` | List available genres |
+| `/list` | List available genres and their stations |
 | `/stats` | See current session and lifetime listening stats |
 | `/prefs` | See your saved preferences and favorite stations |
+| `/reset` | Clear all preferences back to defaults |
 | `/sources` | View, add, edit, or remove streams |
+| `/feedback` | Report a bug or share feedback on GitHub |
 | `/help` | Show help |
 
 ## Focus Timer
@@ -121,11 +127,11 @@ Start a pomodoro session with background music. When the timer ends, the music f
 
 The status line at the bottom of your terminal shows what's currently playing — genre, station name, track title, and pomodoro countdown when active. Always visible, never scrolls away.
 
-## Preferences
+## Your Preferences
 
-Your settings are saved automatically and persist across sessions:
+Your settings are saved automatically and persist locally across sessions:
 
-- **Genre** — your preferred default (ambient by default)
+- **Genre** — your preferred default (ambient by default when fresh start)
 - **Volume** — 0 to 100 (changed via `/volume`)
 
 ## Works Everywhere

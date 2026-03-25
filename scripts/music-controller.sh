@@ -113,7 +113,7 @@ init_prefs() {
         cat > "$PREFS_FILE" <<'EOF'
 {
   "genre": "ambient",
-  "volume": "40",
+  "volume": "30",
   "autoplay": "false",
   "player": "auto",
   "favorite_stations": {}
@@ -627,8 +627,8 @@ do_play() {
 
     # Load volume
     local volume
-    volume=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "40")
-    [ -z "$volume" ] && volume="40"
+    volume=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "30")
+    [ -z "$volume" ] && volume="30"
 
     # Launch player in background
     local pid
@@ -783,6 +783,9 @@ print(json.dumps({
         [ -z "$today_stats" ] && today_stats='{}'
 
         # Clear session tracking on stop
+        # Preserve prev_url so /prev works after stop+play
+        local prev_url
+        prev_url=$(json_get "$STATE_FILE" "prev_url" 2>/dev/null || echo "")
         cat > "$STATE_FILE" <<EOF
 {
   "status": "stopped",
@@ -790,6 +793,7 @@ print(json.dumps({
   "url": "",
   "player": "",
   "pid": "",
+  "prev_url": "$prev_url",
   "session_start": "",
   "station_count": "0"
 }
@@ -868,7 +872,7 @@ do_status() {
     fi
 
     local volume
-    volume=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "40")
+    volume=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "30")
 
     cat <<EOF
 {
@@ -915,7 +919,7 @@ do_reset_prefs() {
     cat > "$PREFS_FILE" <<'EOF'
 {
   "genre": "ambient",
-  "volume": "40",
+  "volume": "30",
   "autoplay": "false",
   "player": "auto",
   "favorite_stations": {}
@@ -1036,8 +1040,8 @@ do_volume_adjust() {
     local arg="$1"
     init_prefs
     local current
-    current=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "40")
-    [ -z "$current" ] && current="40"
+    current=$(json_get "$PREFS_FILE" "volume" 2>/dev/null || echo "30")
+    [ -z "$current" ] && current="30"
 
     local new_vol="$current"
     local direction=""
@@ -1382,7 +1386,7 @@ case "${1:-help}" in
 code-music controller
 
 Commands:
-  play [genre]           Start playback (lofi|jazz|classical|ambient|electronic)
+  play [genre]           Start playback (lofi|jazz|classical|ambient|electronic|synthwave|lounge|indie)
   stop                   Stop playback
   next                   Skip to next stream in current genre
   prev                   Go back to previous station
@@ -1393,6 +1397,7 @@ Commands:
   detect-player          Show detected audio player
   load-prefs             Show current preferences
   save-pref KEY VAL      Update a preference
+  reset-prefs            Clear all preferences back to defaults
   volume-adjust up|down|N  Adjust volume in one step (get+save+restart)
   full-stats             Session status + lifetime stats combined
   full-prefs             Prefs with station names resolved
