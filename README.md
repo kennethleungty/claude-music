@@ -24,7 +24,7 @@ That's it. Start playing with:
 
 ```
 /play                # Start playing (lofi by default)
-/play jazz           # Play a specific genre
+/play lofi           # Play a specific genre
 /stop                # Stop the music
 ```
 
@@ -41,6 +41,13 @@ Or start a focus session with a timer:
 /focus              # 25 min pomodoro — music fades out and chimes when done
 /focus 45 ambient   # 45 min with ambient music
 ```
+
+## Your AI DJ
+
+The plugin includes a DJ agent that picks the right music for you. Two ways to use it:
+
+- **`/vibe`** — The DJ reads your current session automatically. Debugging? It switches to lofi. Deep in a code review? Classical kicks in. No input needed, it figures it out.
+- **`/say <mood>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
 
 ## All Commands
 
@@ -72,13 +79,6 @@ Or start a focus session with a timer:
 
 Each genre has multiple radio stations. Use `/next` to cycle through them.
 
-## Your AI DJ
-
-The plugin includes a DJ agent that picks the right music for you. Two ways to use it:
-
-- **`/vibe`** — The DJ reads your current session automatically. Debugging? It switches to lofi. Deep in a code review? Classical kicks in. No input needed, it figures it out.
-- **`/say <mood>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
-
 ## Focus Timer
 
 Start a pomodoro session with background music. When the timer ends, the music fades out and a chime plays.
@@ -96,7 +96,7 @@ The status line at the bottom of your terminal shows what's currently playing �
 
 Your settings are saved automatically and persist across sessions:
 
-- **Genre** — your preferred default
+- **Genre** — your preferred default (lofi by default)
 - **Volume** — 0 to 100 (changed via `/volume`)
 
 ## Works Everywhere
@@ -120,16 +120,5 @@ All streams are free, ad-free, and require no account. Primarily sourced from [S
 - **Ambient** — SomaFM Drone Zone, Deep Space One, Space Station Soma, Mission Control, Synphaera, Dark Zone, n5MD Radio
 - **EDM** — SomaFM DEF CON Radio, The Trip, Cliqhop IDM, Dub Step Beyond, Secret Agent, Illinois Street Lounge
 
-Want to add your own stations? Use `/sources` to manage streams interactively, or edit `config/sources.yml` directly:
+Want to add your own stations? Use `/sources` to manage streams interactively.
 
-```yaml
-lofi:
-  - name: SomaFM - Groove Salad
-    url: http://ice2.somafm.com/groovesalad-128-mp3
-```
-
-If a stream is unreachable, the plugin falls back to `assets/<genre>_fallback.mp3` when available.
-
-## License
-
-MIT
