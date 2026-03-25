@@ -1,8 +1,9 @@
-# Music for Claude Code, Cursor & OpenCode
+# Music for Coding Agent Sessions
 
-Enjoy lovely background music while your AI coding agent does the heavy lifting. Lofi, jazz, classical, ambient, electronic — streaming live from the internet, right in your terminal.
+Enjoy lovely background music while your AI coding agents do the heavy lifting. Lofi, jazz, classical, ambient, and more — streaming live from the internet, right in your terminal.
 
 No setup, no accounts, no ads. Just install and play.
+
 
 ## Installation
 
@@ -66,7 +67,7 @@ Or start a focus session with a timer:
 
 ## Your AI DJ
 
-The plugin includes a DJ agent that picks the right music for you. It learns your preferences over time — the more you use it, the better it gets.
+The plugin includes our resident DJ agent (DJ Ken) that picks the right music for you. He learns your preferences over time — the more you use it, the better it gets.
 
 - **`/vibe`** — The DJ reads your current session automatically. Debugging? It switches to lofi. Deep in a code review? Classical kicks in. No input needed, it figures it out.
 - **`/say <mood>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
@@ -140,7 +141,7 @@ The plugin auto-detects your platform and available audio players. If nothing is
 
 ## Radio Stations
 
-All streams are free, ad-free, and require no account. Primarily sourced from [SomaFM](https://somafm.com) (listener-supported internet radio since 2000) and public radio stations.
+All streams are free, ad-free, and require no account.
 
 - **Lofi** — Nightwave Plaza, Groove Salad, Beat Blender
 - **Jazz** — SomaFM Fluid, Bossa Beyond, FIP Jazz, WDCB Jazz
