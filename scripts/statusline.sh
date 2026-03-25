@@ -60,7 +60,8 @@ if [ -f "$STATE_FILE" ] && [ -f "$PID_FILE" ]; then
         URL=$(json_file_val "$STATE_FILE" "url" "")
 
         # Get station name from sources.yml
-        PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
+        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+        PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
         STATION=""
         if [ -n "$PLUGIN_ROOT" ] && [ -n "$URL" ] && [ -n "$GENRE" ] && command -v python3 &>/dev/null; then
             SOURCES="$PLUGIN_ROOT/config/sources.yml"
@@ -137,8 +138,8 @@ for s in data.get('$GENRE', []):
         fi
 
         if [ -n "$ICON" ]; then
-            MUSIC="$ICON \033[36m${GENRE}\033[0m"
-            [ -n "$STATION" ] && MUSIC="$MUSIC · $STATION"
+            MUSIC="$ICON \033[1mCode Music\033[0m — Now playing: \033[36m${GENRE}\033[0m"
+            [ -n "$STATION" ] && MUSIC="$MUSIC - $STATION"
             [ -n "$POMO" ] && MUSIC="$MUSIC · $POMO"
             [ -n "$NOW_PLAYING" ] && MUSIC="$MUSIC · \033[2m${NOW_PLAYING}\033[0m"
         fi
@@ -147,7 +148,7 @@ fi
 
 # Compose final status line
 if [ -n "$MUSIC" ]; then
-    echo -e "$MUSIC \033[2m|\033[0m [$MODEL] ${PCT}% ctx"
+    echo -e "[$MODEL] ${PCT}% ctx \033[2m|\033[0m $MUSIC"
 else
-    echo "[$MODEL] ${PCT}% ctx"
+    echo -e "[$MODEL] ${PCT}% ctx \033[2m| ♪ Code Music — Enter /play to fill the silence with great music\033[0m"
 fi

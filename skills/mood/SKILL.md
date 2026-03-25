@@ -1,13 +1,13 @@
 ---
-name: say
-description: "Say — tell the DJ your mood and it picks the right music"
+name: mood
+description: "Mood — tell the DJ how you're feeling and it picks the right music"
 model: sonnet
 allowed-tools: Bash, Agent
 ---
 
 This skill is part of the code-music plugin. Only invoke when the user explicitly uses the slash command.
 
-# Say
+# Mood
 
 The user describes their mood, feeling, or what kind of music they want in their own words. The DJ interprets it and picks the best genre.
 

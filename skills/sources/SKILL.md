@@ -2,7 +2,7 @@
 name: sources
 description: "Sources — add, edit, or remove streams and genres"
 model: sonnet
-tools: Bash, Read, Edit, Write
+allowed-tools: Bash, Read, Edit, Write
 maxTurns: 8
 ---
 

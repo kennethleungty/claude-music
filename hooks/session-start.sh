@@ -17,13 +17,50 @@ SETUP_AUDIO="$PLUGIN_ROOT/scripts/setup-audio.sh"
 DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.code-music}"
 PREFS_FILE="$DATA_DIR/preferences.json"
 
+# ---- Set up status line (once) ----
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+if [ -f "$CLAUDE_SETTINGS" ]; then
+    # Check if statusLine is already configured
+    if ! grep -q '"statusLine"' "$CLAUDE_SETTINGS" 2>/dev/null; then
+        # Add statusLine to existing settings
+        STATUSLINE_CMD="$PLUGIN_ROOT/scripts/statusline.sh"
+        if command -v python3 &>/dev/null; then
+            python3 -c "
+import json
+with open('$CLAUDE_SETTINGS') as f:
+    settings = json.load(f)
+settings['statusLine'] = {
+    'type': 'command',
+    'command': '$STATUSLINE_CMD',
+    'padding': 2
+}
+with open('$CLAUDE_SETTINGS', 'w') as f:
+    json.dump(settings, f, indent=2)
+    f.write('\n')
+" 2>/dev/null || true
+        fi
+    fi
+elif [ -d "$HOME/.claude" ]; then
+    # No settings.json yet — create one with just the statusLine
+    STATUSLINE_CMD="$PLUGIN_ROOT/scripts/statusline.sh"
+    cat > "$CLAUDE_SETTINGS" <<SEOF
+{
+  "statusLine": {
+    "type": "command",
+    "command": "$STATUSLINE_CMD",
+    "padding": 2
+  }
+}
+SEOF
+fi
+
 # ---- Initialize preferences ----
 mkdir -p "$DATA_DIR"
 if [ ! -f "$PREFS_FILE" ]; then
     cat > "$PREFS_FILE" <<'EOF'
 {
   "genre": "ambient",
-  "volume": "40",
+  "volume": "30",
   "autoplay": "false",
   "player": "auto"
 }
@@ -104,7 +141,7 @@ if [ "$AUDIO_WORKING" = "False" ]; then
 fi
 
 # ---- Load preferences & attempt autoplay ----
-PREFS=$("$CONTROLLER" load-prefs 2>/dev/null || echo "genre=ambient volume=40 autoplay=false player=auto")
+PREFS=$("$CONTROLLER" load-prefs 2>/dev/null || echo "genre=ambient volume=30 autoplay=false player=auto")
 AUTOPLAY=$(echo "$PREFS" | grep -o 'autoplay=[^ ]*' | cut -d= -f2)
 GENRE=$(echo "$PREFS" | grep -o 'genre=[^ ]*' | cut -d= -f2)
 
@@ -152,7 +189,7 @@ else
     fi
 fi
 
-CONTEXT="$CONTEXT Commands: /play, /stop, /next, /status, /list, /vibe, /dj, /say, /focus, /pomodoro, /volume, /stats, /prefs, /sources, /help"
+CONTEXT="$CONTEXT Commands: /play, /stop, /next, /prev, /now, /pause, /mute, /status, /list, /vibe, /dj, /mood, /focus, /pomodoro, /volume, /stats, /prefs, /reset, /sources, /feedback, /help"
 
 # ---- Output JSON for Claude Code ----
 escape_for_json() {

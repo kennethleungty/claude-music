@@ -27,7 +27,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/kennethleun
 | `/stop` | Stop the music and show session stats |
 | `/next` | Switch to a different station (same genre) |
 | `/vibe` | AI DJ reads your session and picks the best genre |
-| `/say <mood>` | Tell the DJ your mood and it picks the right music |
+| `/mood <feeling>` | Tell the DJ how you're feeling and it picks the right music |
 | `/focus [min] [genre]` | Pomodoro timer with music (default 25 min) |
 | `/volume [0-100]` | Set volume |
 | `/status` | See what's playing |

@@ -23,12 +23,15 @@ Print the following guide directly (do not run any commands):
 **Playback**
 - `/play [genre]` — Start music (optionally pick a genre)
 - `/stop` — Stop music
+- `/pause` — Stop music (alias for /stop)
+- `/mute` — Stop music (alias for /stop)
 - `/next` — Skip to a different stream in the same genre
+- `/prev` — Go back to the previous station
 
 **DJ**
 - `/vibe` — Auto-DJ picks music based on your current session
 - `/dj` — Same as vibe
-- `/say <mood>` — Tell the DJ how you're feeling in your own words
+- `/mood <feeling>` — Tell the DJ how you're feeling in your own words
 
 **Focus**
 - `/focus [min] [genre]` — Pomodoro timer with music (default 25 min). Music fades out and a chime plays when time's up.
@@ -36,10 +39,12 @@ Print the following guide directly (do not run any commands):
 
 **Info**
 - `/status` — What's playing right now
-- `/list` — Show available genres
+- `/now` — What's playing right now (alias for /status)
+- `/list` — Show available genres and their stations
 - `/volume [0-100]` — Set volume, or show current if no number given
 - `/stats` — See current session and lifetime listening stats
 - `/prefs` — See your saved preferences and favorite stations
+- `/reset` — Clear all preferences back to defaults
 - `/sources` — View, add, edit, or remove streams and genres
 
 **Other**
