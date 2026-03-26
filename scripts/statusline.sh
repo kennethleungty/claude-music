@@ -157,6 +157,7 @@ fi
 # Compose final status line
 if [ -n "$MUSIC" ]; then
     echo -e "[$MODEL] ${PCT}% ctx \033[2m|\033[0m $MUSIC"
-else
+elif [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+    # Only show the idle prompt when the plugin is active in this session
     echo -e "[$MODEL] ${PCT}% ctx \033[2m| ♪ Code Music — Enter /play to fill the silence with great music\033[0m"
 fi
