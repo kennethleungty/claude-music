@@ -2,42 +2,30 @@
   <img src="assets/logo.png" alt="Code Music" width="350">
 </p>
 
-<h2 align="center">Music in your Coding Agent Sessions</h2>
+<h2 align="center">Music in your Claude Code Sessions</h2>
 
-Enjoy great background music while your AI coding agents do the heavy lifting. Lofi, jazz, classical, ambient, and more — streaming live from the internet, right in your terminal.
+Enjoy great background music while Claude Code does the heavy lifting. Lofi, jazz, classical, ambient, and more — streaming live from the internet, right in your terminal.
 
-No setup, no accounts, no ads. Just install and play.
+No setup, no accounts, no ads. Just install and listen.
 
-
-## Installation
-
-In Claude Code, register the marketplace first:
-
-```bash
-/plugin marketplace add kennethleungty/code-music-marketplace
-```
-
-Then install the plugin:
-
-```bash
-/plugin install code-music@code-music-marketplace
-```
-
-### Verify Installation
-
-Start a new session in your chosen platform and try `/play`. Background music should start streaming immediately. You can also try `/vibe` to let the AI DJ pick a genre based on your current session, or `/help` to see all available commands.
-
-> Don't have an audio player installed? No worries — the plugin detects this and walks you through installing one automatically.
+<!-- <p align="center">
+  <img src="assets/demo.gif" alt="code-music demo" width="600">
+</p> -->
 
 ## Quick Start
 
 ```
-/play                # Start playing (ambient by default)
+/play                # Start playing (ambient genre by default)
 /play jazz           # Play a specific genre
+/next                # Skip to a different station (same genre)
+/prev                # Go back to the previous station
 /stop                # Stop the music
+/volume up           # Nudge volume up (or down, or set 0-100)
+/mute                # Mute without stopping the stream
+/status              # See what's playing right now
 ```
 
-Or let the AI DJ pick for you:
+Or let the resident AI DJ Ken pick for you:
 
 ```
 /vibe                            # DJ reads your session and picks automatically
@@ -51,13 +39,15 @@ Or start a focus session with a timer:
 /focus 45 ambient   # 45 min with ambient music
 ```
 
-## Your AI DJ
+See the [full command list](#all-commands) for more.
 
-The plugin includes our resident DJ agent (DJ Ken) that picks the right music for you. He learns your preferences over time — the more you use it, the better it gets.
+## AI DJ
 
-- **`/vibe`** — The DJ reads your current session automatically. Debugging? It switches to lofi. Deep in a code review? Classical kicks in. No input needed, it figures it out.
-- **`/mood <feeling>`** — Tell the DJ what you want in your own words. "feeling tired, need energy", "calm me down", "something retro and fun".
-- **`/prefs`** — See what the plugin has learned about your preferences.
+The plugin includes a resident AI DJ (DJ Ken) that picks the right music for you. Debugging? He switches to lofi. Deep in a code review? Classical kicks in. He learns your preferences over time — the more you use it, the better he gets.
+
+- **`/vibe`** — DJ Ken reads your current session and picks automatically. No input needed.
+- **`/mood <feeling>`** — Tell him what you want in your own words: "calm me down", "something retro and fun".
+- **`/prefs`** — See what he's learned about your taste over time.
 
 ## Genres
 
@@ -74,7 +64,37 @@ The plugin includes our resident DJ agent (DJ Ken) that picks the right music fo
 
 Each genre has multiple stations. Use `/next` to cycle through them.
 
-## All Commands
+## Installation
+
+In Claude Code, register the marketplace first:
+
+```bash
+/plugin marketplace add kennethleungty/code-music-marketplace
+```
+
+Then install the plugin:
+
+```bash
+/plugin install code-music@code-music-marketplace
+```
+
+Start a new session and try `/play` or `/vibe`.
+
+> Don't have an audio player installed? No worries — the plugin detects this and walks you through installing one automatically.
+
+## Works Everywhere
+
+| Platform | How it plays |
+|----------|-------------|
+| **macOS** | mpv (via Homebrew) or built-in afplay |
+| **Linux** | mpv (via apt, dnf, pacman, etc.) |
+| **WSL2** | mpv inside WSL (with WSLg audio) or Windows-side mpv.exe |
+| **Windows** | mpv (via winget, scoop, or chocolatey) |
+
+The plugin auto-detects your platform and available audio players. If nothing is installed, it offers to set one up for you.
+
+<details>
+<summary><strong>All Commands</strong></summary>
 
 | Command | What it does |
 |---------|-------------|
@@ -99,7 +119,10 @@ Each genre has multiple stations. Use `/next` to cycle through them.
 | `/feedback` | Report a bug or share feedback on GitHub |
 | `/help` | Show help |
 
-## Focus Timer
+</details>
+
+<details>
+<summary><strong>Focus Timer</strong></summary>
 
 Start a pomodoro session with background music. When the timer ends, the music fades out and a chime plays.
 
@@ -108,29 +131,22 @@ Start a pomodoro session with background music. When the timer ends, the music f
 /focus 45 ambient   # 45 min of ambient
 ```
 
-## Now Playing
+</details>
+
+<details>
+<summary><strong>Now Playing & Preferences</strong></summary>
 
 The status line at the bottom of your terminal shows what's currently playing — genre, station name, track title, and pomodoro countdown when active. Always visible, never scrolls away.
-
-## Your Preferences
 
 Your settings are saved automatically and persist locally across sessions:
 
 - **Genre** — your preferred default (ambient by default when fresh start)
 - **Volume** — 0 to 100 (changed via `/volume`)
 
-## Works Everywhere
+</details>
 
-| Platform | How it plays |
-|----------|-------------|
-| **macOS** | mpv (via Homebrew) or built-in afplay |
-| **Linux** | mpv (via apt, dnf, pacman, etc.) |
-| **WSL2** | mpv inside WSL (with WSLg audio) or Windows-side mpv.exe |
-| **Windows** | mpv (via winget, scoop, or chocolatey) |
-
-The plugin auto-detects your platform and available audio players. If nothing is installed, it offers to set one up for you.
-
-## Radio Stations
+<details>
+<summary><strong>Radio Stations</strong></summary>
 
 All streams are free, ad-free, and require no account.
 
@@ -145,11 +161,8 @@ All streams are free, ad-free, and require no account.
 
 Want to add your own stations? Use `/sources` to manage streams interactively.
 
+</details>
+
 ## Coming Soon
 
-- **Spotify Integration** — Connect your Spotify account to play your own playlists and liked songs directly through the plugin
-- **`/surprise`** — Plays a random genre or station you've never listened to before — perfect for discovering new music
-- **Auto-Vibe Mode** — The DJ continuously monitors your session and switches genres automatically as your work changes, no commands needed
-- **AI-Generated Music Streams** — Original background music generated by AI models from providers like Google's Lyria
-- **More Stations** — Expanded and better curated station library with more genres and sources from around the world
-
+**Spotify Integration** — Connect your Spotify account and play your own playlists directly through the plugin.

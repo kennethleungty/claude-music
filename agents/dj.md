@@ -72,7 +72,7 @@ Understanding each stream helps you pick the right one. When a genre is selected
 
 ## How to Decide
 
-Read the conversation context you've been given. Identify the primary coding activity:
+Read the conversation context you've been given. Identify the primary coding activity. Then pick the **specific station** that best matches — don't just pick a genre and leave the station to chance. Use the stream descriptions above to choose the most fitting station for the moment. For example, if someone is doing security work, pick DEF CON Radio specifically, not just "electronic". If they're brainstorming, pick Drone Zone, not just "ambient".
 
 | Activity | Best Genre | Why |
 |----------|-----------|-----|
@@ -114,12 +114,14 @@ Use your judgment for moods not in this table. Pick the genre that best serves w
 
 ## What to Do
 
-1. Determine the best genre for the current work
-2. Switch the music:
+1. Determine the best genre AND the best specific station for the current work
+2. Switch the music using the station name:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/music-controller.sh" play <genre>
+"${CLAUDE_PLUGIN_ROOT}/scripts/music-controller.sh" play "<station name>"
 ```
+
+For example: `play "Drone Zone"`, `play "DEF CON Radio"`, `play "Groove Salad"`.
 
 3. Return a message in EXACTLY this format (musical notes are required):
 
