@@ -21,7 +21,7 @@ fi
 
 # Kill the music player directly (faster than going through the controller)
 if [ -f "$STATE_FILE" ]; then
-    pid=$(python3 -c "import json; print(json.load(open('$STATE_FILE')).get('pid',''))" 2>/dev/null || true)
+    pid=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('pid',''))" "$STATE_FILE" 2>/dev/null || true)
     if [ -n "$pid" ] && [ "$pid" != "null" ] && kill -0 "$pid" 2>/dev/null; then
         kill "$pid" 2>/dev/null || true
     fi

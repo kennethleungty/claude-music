@@ -71,16 +71,16 @@ fi
 # If the user muted (volume=0) in a previous session, restore to 30
 if command -v python3 &>/dev/null; then
     python3 -c "
-import json
-with open('$PREFS_FILE') as f:
+import json, sys
+with open(sys.argv[1]) as f:
     prefs = json.load(f)
 vol = str(prefs.get('volume', '30'))
 if vol == '0':
     prefs['volume'] = '30'
-    with open('$PREFS_FILE', 'w') as f:
+    with open(sys.argv[1], 'w') as f:
         json.dump(prefs, f, indent=2)
         f.write('\n')
-" 2>/dev/null || true
+" "$PREFS_FILE" 2>/dev/null || true
 fi
 
 # ---- Deterministic platform & audio detection ----
@@ -89,7 +89,7 @@ AUDIO_JSON=$("$SETUP_AUDIO" check 2>/dev/null || echo '{"audio_working": false}'
 
 # Extract fields via python3 (fallback to safe defaults)
 if command -v python3 &>/dev/null; then
-    read_json() { echo "$1" | python3 -c "import json,sys; print(json.load(sys.stdin).get('$2','$3'))" 2>/dev/null || echo "$3"; }
+    read_json() { echo "$1" | python3 -c "import json,sys; print(json.load(sys.stdin).get(sys.argv[1],sys.argv[2]))" "$2" "$3" 2>/dev/null || echo "$3"; }
     PLATFORM_OS=$(read_json "$PLATFORM_JSON" os unknown)
     PLATFORM_WSL=$(read_json "$PLATFORM_JSON" is_wsl False)
     PLATFORM_PKG=$(read_json "$PLATFORM_JSON" pkg_manager "")

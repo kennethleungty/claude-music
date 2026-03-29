@@ -30,7 +30,7 @@ json_get() {
     if command -v jq &>/dev/null; then
         jq -r ".$key // empty" "$file" 2>/dev/null
     elif command -v python3 &>/dev/null; then
-        python3 -c "import json,sys; d=json.load(open('$file')); print(d.get('$key',''))" 2>/dev/null
+        python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get(sys.argv[2],''))" "$file" "$key" 2>/dev/null
     else
         sed -n "s/.*\"$key\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$file" 2>/dev/null | head -1
     fi
@@ -40,17 +40,26 @@ json_set() {
     local file="$1" key="$2" value="$3"
     if command -v jq &>/dev/null; then
         local tmp="${file}.tmp"
-        jq ".$key = \"$value\"" "$file" > "$tmp" && mv "$tmp" "$file"
+        jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$file" > "$tmp" && mv "$tmp" "$file"
     elif command -v python3 &>/dev/null; then
         python3 -c "
-import json
-with open('$file') as f: d=json.load(f)
-d['$key']='$value'
-with open('$file','w') as f: json.dump(d,f,indent=2)
-"
+import json, sys
+with open(sys.argv[1]) as f: d=json.load(f)
+d[sys.argv[2]]=sys.argv[3]
+with open(sys.argv[1],'w') as f: json.dump(d,f,indent=2)
+" "$file" "$key" "$value"
     else
         sed -i "s/\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"$key\": \"$value\"/" "$file"
     fi
+}
+
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
 }
 
 # ============================================================================
@@ -600,7 +609,7 @@ do_play() {
             install_hint="$nosudo_hint"
         fi
 
-        echo "{\"error\": \"Music is all queued up, but no audio player (mpv or ffplay) is installed yet. Want me to set it up?\", \"install_command\": \"$install_hint\", \"nosudo_hint\": \"$nosudo_hint\", \"has_sudo\": $has_sudo}"
+        printf '{"error": "Music is all queued up, but no audio player (mpv or ffplay) is installed yet. Want me to set it up?", "install_command": "%s", "nosudo_hint": "%s", "has_sudo": %s}\n' "$(json_escape "$install_hint")" "$(json_escape "$nosudo_hint")" "$has_sudo"
         return 1
     fi
 
@@ -633,7 +642,7 @@ do_play() {
         # Fallback to local file
         url=$(get_fallback_file "$genre" 2>/dev/null || echo "")
         if [ -z "$url" ]; then
-            echo "{\"error\": \"No stream available and no fallback MP3 found for genre: $genre\"}"
+            printf '{"error": "No stream available and no fallback MP3 found for genre: %s"}\n' "$(json_escape "$genre")"
             return 1
         fi
         source="local"
@@ -670,7 +679,7 @@ do_play() {
             local vol_float
             vol_float=$(normalize_volume "$volume" "afplay")
             if [ "$source" = "local" ]; then
-                nohup bash -c "while true; do afplay -v $vol_float \"$url\"; done" >/dev/null 2>&1 &
+                nohup bash -c 'while true; do afplay -v "$1" "$2"; done' _ "$vol_float" "$url" >/dev/null 2>&1 &
             else
                 # afplay can't stream — fallback to local only
                 local fallback
@@ -679,7 +688,7 @@ do_play() {
                     url="$fallback"
                     source="local"
                     stream_name="$(basename "$url")"
-                    nohup bash -c "while true; do afplay -v $vol_float \"$url\"; done" >/dev/null 2>&1 &
+                    nohup bash -c 'while true; do afplay -v "$1" "$2"; done' _ "$vol_float" "$url" >/dev/null 2>&1 &
                 else
                     echo '{"error": "afplay cannot stream URLs and no fallback MP3 found"}'
                     return 1
@@ -754,9 +763,11 @@ do_play() {
 
     local takeover_field=""
     if [ -n "$_TAKEOVER_PREV_GENRE" ]; then
-        takeover_field=", \"takeover\": true, \"prev_genre\": \"$_TAKEOVER_PREV_GENRE\""
+        takeover_field="$(printf ', "takeover": true, "prev_genre": "%s"' "$(json_escape "$_TAKEOVER_PREV_GENRE")")"
     fi
-    echo "{\"status\": \"playing\", \"genre\": \"$genre\", \"genre_reason\": \"$genre_reason\", \"station\": \"$stream_name\", \"source\": \"$source\", \"player\": \"$player\"${takeover_field}}"
+    printf '{"status": "playing", "genre": "%s", "genre_reason": "%s", "station": "%s", "source": "%s", "player": "%s"%s}\n' \
+        "$(json_escape "$genre")" "$(json_escape "$genre_reason")" "$(json_escape "$stream_name")" \
+        "$(json_escape "$source")" "$(json_escape "$player")" "$takeover_field"
 }
 
 do_stop() {
@@ -786,8 +797,8 @@ do_stop() {
         local today_stats=""
         if command -v python3 &>/dev/null && [ -f "$STATS_FILE" ]; then
             today_stats=$(python3 -c "
-import json, datetime
-with open('$STATS_FILE') as f:
+import json, datetime, sys
+with open(sys.argv[1]) as f:
     stats = json.load(f)
 today = datetime.date.today().isoformat()
 d = stats.get('daily', {}).get(today, {})
@@ -797,7 +808,7 @@ print(json.dumps({
     'today_stations': d.get('stations', 0),
     'today_genres': d.get('genres', {})
 }))
-" 2>/dev/null || echo '{}')
+" "$STATS_FILE" 2>/dev/null || echo '{}')
         fi
         [ -z "$today_stats" ] && today_stats='{}'
 
@@ -819,12 +830,13 @@ print(json.dumps({
 EOF
         # Merge session + today stats into response
         python3 -c "
-import json
-session = {'status': 'stopped', 'genre': '$genre', 'duration_minutes': '${duration_min:-0}', 'station_count': '${station_count:-1}'}
-today = json.loads('$today_stats')
+import json, sys
+session = {'status': 'stopped', 'genre': sys.argv[1], 'duration_minutes': sys.argv[2], 'station_count': sys.argv[3]}
+today = json.loads(sys.argv[4])
 session.update(today)
 print(json.dumps(session))
-" 2>/dev/null || echo "{\"status\": \"stopped\", \"genre\": \"$genre\", \"duration_minutes\": \"${duration_min:-0}\", \"station_count\": \"${station_count:-1}\"}"
+" "$genre" "${duration_min:-0}" "${station_count:-1}" "$today_stats" 2>/dev/null || printf '{"status": "stopped", "genre": "%s", "duration_minutes": "%s", "station_count": "%s"}\n' \
+            "$(json_escape "$genre")" "${duration_min:-0}" "${station_count:-1}"
     else
         echo "{\"status\": \"already_stopped\"}"
     fi
@@ -930,7 +942,7 @@ do_save_pref() {
     local key="$1" value="$2"
     init_prefs
     json_set "$PREFS_FILE" "$key" "$value"
-    echo "{\"saved\": \"$key=$value\"}"
+    printf '{"saved": "%s=%s"}\n' "$(json_escape "$key")" "$(json_escape "$value")"
 }
 
 do_reset_prefs() {
@@ -954,16 +966,16 @@ save_favorite_station() {
     python3 -c "
 import json, sys
 try:
-    with open('$PREFS_FILE') as f:
+    with open(sys.argv[1]) as f:
         prefs = json.load(f)
 except:
     sys.exit(0)
 favs = prefs.get('favorite_stations', {})
-favs['$genre'] = '$station_url'
+favs[sys.argv[2]] = sys.argv[3]
 prefs['favorite_stations'] = favs
-with open('$PREFS_FILE', 'w') as f:
+with open(sys.argv[1], 'w') as f:
     json.dump(prefs, f, indent=2)
-" 2>/dev/null || true
+" "$PREFS_FILE" "$genre" "$station_url" 2>/dev/null || true
 }
 
 get_favorite_station() {
@@ -971,13 +983,13 @@ get_favorite_station() {
     python3 -c "
 import json, sys
 try:
-    with open('$PREFS_FILE') as f:
+    with open(sys.argv[1]) as f:
         prefs = json.load(f)
-    url = prefs.get('favorite_stations', {}).get('$genre', '')
+    url = prefs.get('favorite_stations', {}).get(sys.argv[2], '')
     print(url)
 except:
     print('')
-" 2>/dev/null || echo ""
+" "$PREFS_FILE" "$genre" 2>/dev/null || echo ""
 }
 
 # ============================================================================
@@ -1004,24 +1016,25 @@ update_stats() {
     local genre="$1" duration_min="$2" station_count="$3"
     init_stats
     python3 -c "
-import json, time, datetime
+import json, time, datetime, sys
+stats_file, genre, duration_min, station_count = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 try:
-    with open('$STATS_FILE') as f:
+    with open(stats_file) as f:
         stats = json.load(f)
 except:
     stats = {'total_sessions': 0, 'total_minutes': 0, 'total_stations': 0, 'genres': {}, 'first_session': None, 'last_session': None, 'daily': {}}
 
 now = int(time.time())
 today = datetime.date.today().isoformat()
-dur = int('${duration_min}' or '0')
-sc = int('${station_count}' or '0')
+dur = int(duration_min or '0')
+sc = int(station_count or '0')
 
 # Lifetime stats
 stats['total_sessions'] = stats.get('total_sessions', 0) + 1
 stats['total_minutes'] = stats.get('total_minutes', 0) + dur
 stats['total_stations'] = stats.get('total_stations', 0) + sc
 genres = stats.get('genres', {})
-genres['$genre'] = genres.get('$genre', 0) + dur
+genres[genre] = genres.get(genre, 0) + dur
 stats['genres'] = genres
 if not stats.get('first_session'):
     stats['first_session'] = now
@@ -1035,7 +1048,7 @@ daily[today]['sessions'] = daily[today].get('sessions', 0) + 1
 daily[today]['minutes'] = daily[today].get('minutes', 0) + dur
 daily[today]['stations'] = daily[today].get('stations', 0) + sc
 dg = daily[today].get('genres', {})
-dg['$genre'] = dg.get('$genre', 0) + dur
+dg[genre] = dg.get(genre, 0) + dur
 daily[today]['genres'] = dg
 stats['daily'] = daily
 
@@ -1043,9 +1056,9 @@ stats['daily'] = daily
 cutoff = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
 stats['daily'] = {k: v for k, v in stats['daily'].items() if k >= cutoff}
 
-with open('$STATS_FILE', 'w') as f:
+with open(stats_file, 'w') as f:
     json.dump(stats, f, indent=2)
-" 2>/dev/null || true
+" "$STATS_FILE" "$genre" "${duration_min}" "${station_count}" 2>/dev/null || true
 }
 
 do_load_stats() {
@@ -1080,7 +1093,7 @@ do_volume_adjust() {
             direction="set"
             ;;
         *)
-            echo "{\"error\": \"Invalid volume: $arg. Use 0-100, up, or down.\"}"
+            printf '{"error": "Invalid volume: %s. Use 0-100, up, or down."}\n' "$(json_escape "$arg")"
             return 1
             ;;
     esac
@@ -1161,12 +1174,13 @@ do_full_prefs() {
     if command -v python3 &>/dev/null && [ -f "$STATIONS_FILE" ]; then
         resolved_favs=$(python3 -c "
 import json, sys
+stations_file, prefs_file = sys.argv[1], sys.argv[2]
 try:
     import yaml
-    with open('$STATIONS_FILE') as f:
+    with open(stations_file) as f:
         sources = yaml.safe_load(f)
 except ImportError:
-    with open('$STATIONS_FILE') as f:
+    with open(stations_file) as f:
         text = f.read()
     sources = {}
     current_genre = None
@@ -1193,7 +1207,7 @@ except ImportError:
     if current_item and current_genre:
         sources.setdefault(current_genre, []).append(current_item)
 
-with open('$PREFS_FILE') as f:
+with open(prefs_file) as f:
     prefs = json.load(f)
 
 url_to_name = {}
@@ -1208,7 +1222,7 @@ for genre, url in favs.items():
     resolved[genre] = name
 
 print(json.dumps(resolved))
-" 2>/dev/null || echo "{}")
+" "$STATIONS_FILE" "$PREFS_FILE" 2>/dev/null || echo "{}")
     else
         resolved_favs="{}"
     fi
@@ -1339,10 +1353,11 @@ INNER
 
     # Extract station from play result
     local station genre_out
-    station=$(echo "$play_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('station',''))" 2>/dev/null || echo "")
-    genre_out=$(echo "$play_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('genre',''))" 2>/dev/null || echo "")
+    station=$(echo "$play_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get(sys.argv[1],''))" "station" 2>/dev/null || echo "")
+    genre_out=$(echo "$play_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get(sys.argv[1],''))" "genre" 2>/dev/null || echo "")
 
-    echo "{\"status\": \"pomodoro_started\", \"duration_minutes\": $minutes, \"genre\": \"$genre_out\", \"station\": \"$station\"}"
+    printf '{"status": "pomodoro_started", "duration_minutes": %d, "genre": "%s", "station": "%s"}\n' \
+        "$minutes" "$(json_escape "$genre_out")" "$(json_escape "$station")"
 }
 
 do_pomodoro_status() {
@@ -1366,7 +1381,8 @@ do_pomodoro_status() {
     fi
     remaining_minutes=$(( remaining_seconds / 60 ))
 
-    echo "{\"status\": \"$pomo_status\", \"duration_minutes\": $duration_minutes, \"remaining_minutes\": $remaining_minutes, \"remaining_seconds\": $remaining_seconds}"
+    printf '{"status": "%s", "duration_minutes": %d, "remaining_minutes": %d, "remaining_seconds": %d}\n' \
+        "$(json_escape "$pomo_status")" "$duration_minutes" "$remaining_minutes" "$remaining_seconds"
 }
 
 do_pomodoro_stop() {
@@ -1409,6 +1425,8 @@ code-music controller
 Commands:
   play [genre]           Start playback (lofi|jazz|classical|ambient|electronic|synthwave|lounge|indie)
   stop                   Stop playback
+  pause                  Stop the music (alias for stop)
+  mute                   Silence music without stopping (volume 0)
   next                   Skip to next stream in current genre
   prev                   Go back to previous station
   status                 Show current playback status

@@ -11,7 +11,7 @@ json_val() {
     if command -v jq &>/dev/null; then
         echo "$json" | jq -r ".$key // empty" 2>/dev/null || echo "$default"
     elif command -v python3 &>/dev/null; then
-        echo "$json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('$key','$default'))" 2>/dev/null || echo "$default"
+        echo "$json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get(sys.argv[1],sys.argv[2]))" "$key" "$default" 2>/dev/null || echo "$default"
     else
         echo "$default"
     fi
@@ -22,7 +22,7 @@ json_file_val() {
     if command -v jq &>/dev/null; then
         jq -r ".$key // empty" "$file" 2>/dev/null || echo "$default"
     elif command -v python3 &>/dev/null; then
-        python3 -c "import json; print(json.load(open('$file')).get('$key','$default'))" 2>/dev/null || echo "$default"
+        python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2],sys.argv[3]))" "$file" "$key" "$default" 2>/dev/null || echo "$default"
     else
         echo "$default"
     fi
@@ -34,13 +34,13 @@ MODEL=$(json_val "$input" "model.display_name" "Claude")
 if command -v jq &>/dev/null; then
     MODEL=$(echo "$input" | jq -r '.model.display_name // "Claude"' 2>/dev/null || echo "Claude")
 elif command -v python3 &>/dev/null; then
-    MODEL=$(echo "$input" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('model',{}).get('display_name','Claude'))" 2>/dev/null || echo "Claude")
+    MODEL=$(echo "$input" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('model',{}).get(sys.argv[1],sys.argv[2]))" "display_name" "Claude" 2>/dev/null || echo "Claude")
 fi
 PCT=$(json_val "$input" "context_window.used_percentage" "0")
 if command -v jq &>/dev/null; then
     PCT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' 2>/dev/null | cut -d. -f1)
 elif command -v python3 &>/dev/null; then
-    PCT=$(echo "$input" | python3 -c "import json,sys; d=json.load(sys.stdin); print(int(d.get('context_window',{}).get('used_percentage',0)))" 2>/dev/null || echo "0")
+    PCT=$(echo "$input" | python3 -c "import json,sys; d=json.load(sys.stdin); print(int(d.get('context_window',{}).get(sys.argv[1],0)))" "used_percentage" 2>/dev/null || echo "0")
 fi
 [ -z "$PCT" ] && PCT="0"
 
@@ -67,14 +67,16 @@ if [ -f "$STATE_FILE" ] && [ -f "$PID_FILE" ]; then
             SOURCES="$PLUGIN_ROOT/config/sources.yml"
             if [ -f "$SOURCES" ]; then
                 STATION=$(python3 -c "
+import sys
+sources_file, genre, url = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
     import yaml
-    with open('$SOURCES') as f: data = yaml.safe_load(f)
+    with open(sources_file) as f: data = yaml.safe_load(f)
 except ImportError:
     data = {}
     current_genre = None
     current_item = {}
-    with open('$SOURCES') as f:
+    with open(sources_file) as f:
         for line in f:
             line = line.rstrip('\n')
             stripped = line.strip()
@@ -89,10 +91,10 @@ except ImportError:
             elif indent == 4 and stripped.startswith('url:'):
                 current_item['url'] = stripped.split(': ', 1)[1].strip()
     if current_item and current_genre: data[current_genre].append(current_item)
-for s in data.get('$GENRE', []):
-    if s.get('url') == '$URL':
+for s in data.get(genre, []):
+    if s.get('url') == url:
         print(s['name']); break
-" 2>/dev/null)
+" "$SOURCES" "$GENRE" "$URL" 2>/dev/null)
             fi
         fi
 
