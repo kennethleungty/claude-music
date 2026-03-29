@@ -13,9 +13,6 @@ jazz:
   - name: SomaFM - Bossa Beyond
     url: http://ice4.somafm.com/bossa-128-mp3
     description: Silky-smooth Brazilian bossa nova, samba, and beyond
-  - name: FIP Jazz
-    url: http://direct.fipradio.fr/live/fip-webradio2.mp3
-    description: Eclectic jazz and blues from Radio France, rare tracks to classics
   - name: WDCB Jazz
     url: http://wdcb-ice.streamguys.org:80/wdcb128
     description: Chicago's home for jazz, listener-supported public radio
