@@ -2,12 +2,12 @@
 set -euo pipefail
 
 # ============================================================================
-# code-music controller — single entry point for all audio operations
+# claude-music controller — single entry point for all audio operations
 # Usage: music-controller.sh <command> [args...]
 # ============================================================================
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.code-music}"
+DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.claude-music}"
 PREFS_FILE="$DATA_DIR/preferences.json"
 STATE_FILE="$DATA_DIR/state.json"
 PID_FILE="$DATA_DIR/player.pid"
@@ -315,7 +315,7 @@ kill_player() {
 }
 
 kill_orphaned_players() {
-    # Kill any audio player processes spawned by previous code-music/claude-music
+    # Kill any audio player processes spawned by previous claude-music
     # sessions that aren't tracked by the current PID file (e.g. after a rename
     # or if the PID file was lost). This prevents overlapping audio.
     local pattern
@@ -1420,7 +1420,7 @@ case "${1:-help}" in
     load-stats)         do_load_stats ;;
     help|*)
         cat <<'USAGE'
-code-music controller
+claude-music controller
 
 Commands:
   play [genre]           Start playback (lofi|jazz|classical|ambient|electronic|synthwave|lounge|indie)

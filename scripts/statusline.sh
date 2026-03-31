@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code status line script for code-music
+# Claude Code status line script for claude-music
 # Reads session JSON from stdin, appends now-playing info
 # Output: ♪ lofi · SomaFM Groove Salad · "Track Name" | [Model] 42% context
 
@@ -45,7 +45,7 @@ fi
 [ -z "$PCT" ] && PCT="0"
 
 # Determine data directory
-DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.code-music}"
+DATA_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.claude-music}"
 STATE_FILE="$DATA_DIR/state.json"
 PID_FILE="$DATA_DIR/player.pid"
 
@@ -147,7 +147,7 @@ for s in data.get(genre, []):
         fi
 
         if [ -n "$ICON" ]; then
-            MUSIC="$ICON \033[1mCode Music\033[0m — Now playing: \033[36m${GENRE}\033[0m"
+            MUSIC="$ICON \033[1mClaude Music\033[0m — Now playing: \033[36m${GENRE}\033[0m"
             [ -n "$STATION" ] && MUSIC="$MUSIC - $STATION"
             [ "$VOL" = "0" ] && MUSIC="$MUSIC \033[31m(muted)\033[0m"
             [ -n "$POMO" ] && MUSIC="$MUSIC · $POMO"
@@ -161,5 +161,5 @@ if [ -n "$MUSIC" ]; then
     echo -e "[$MODEL] ${PCT}% ctx \033[2m|\033[0m $MUSIC"
 elif [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
     # Only show the idle prompt when the plugin is active in this session
-    echo -e "[$MODEL] ${PCT}% ctx \033[2m| ♪ Code Music — Enter /play to fill the silence with great music\033[0m"
+    echo -e "[$MODEL] ${PCT}% ctx \033[2m| ♪ Claude Music — Enter /play to fill the silence with great music\033[0m"
 fi
