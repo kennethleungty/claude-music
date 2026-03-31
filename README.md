@@ -47,6 +47,28 @@ Or start a focus session with a timer:
 
 See the [full command list](#all-commands) for more.
 
+## Installation
+
+### Claude Code (via Plugin Marketplace)
+
+Register the marketplace first:
+
+```bash
+/plugin marketplace add kennethleungty/claude-music-marketplace
+```
+
+Then install the plugin:
+
+```bash
+/plugin install claude-music@claude-music-marketplace
+```
+
+### Verify Installation
+
+Start a new session and try `/play` or `/vibe`.
+
+> Don't have an audio player installed? No worries — the plugin detects this and walks you through installing one automatically.
+
 ## AI DJ
 
 The plugin includes a resident AI DJ (DJ Ken) that picks the right music for you. Debugging? He switches to lofi. Deep in a code review? Classical kicks in. He learns your preferences over time — the more you use it, the better he gets.
@@ -69,28 +91,6 @@ The plugin includes a resident AI DJ (DJ Ken) that picks the right music for you
 | **indie** | Indie pop, folk, dream pop | Creative writing, docs, warm sessions | 4 |
 
 Each genre has multiple stations. Use `/next` to cycle through them.
-
-## Installation
-
-### Claude Code (via Plugin Marketplace)
-
-Register the marketplace first:
-
-```bash
-/plugin marketplace add kennethleungty/claude-music-marketplace
-```
-
-Then install the plugin:
-
-```bash
-/plugin install claude-music@claude-music-marketplace
-```
-
-### Verify Installation
-
-Start a new session and try `/play` or `/vibe`.
-
-> Don't have an audio player installed? No worries — the plugin detects this and walks you through installing one automatically.
 
 ## Works Everywhere
 
