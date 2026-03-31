@@ -34,26 +34,18 @@ jazz:
 
 classical:
   stations:
-    - name: Classical Radio
-      url: https://www.youtube.com/watch?v=mIYzp5rcTvU
-      description: 24/7 classical music radio — relaxing orchestral & piano. A reliable YouTube livestream for sustained deep focus.
-      tags: [focus, deep-work, studying, concentration, relaxed]
+    - name: Classical Piano Music & Fireplace 24/7 - Mozart, Chopin, Beethoven, Bach, Grieg, Schumann, Satie
+      url: https://www.youtube.com/watch?v=y6TZHLAzg5o
+      description: 24/7 classical piano with cozy fireplace ambience — Mozart, Chopin, Beethoven, Bach, Grieg, Schumann, Satie. Warm and focused.
+      tags: [focus, deep-work, studying, warm, cozy, piano]
     - name: All Classical Portland
       url: http://allclassical-ice.streamguys.com/ac96kmp3
       description: Portland's independent community-funded classical music station. Well-curated, broad repertoire, professional presentation.
       tags: [focus, code-review, research, contemplative, curated]
-    - name: WWFM The Classical Network
-      url: http://wwfm.streamguys1.com/live
-      description: Classical from the Middle Ages to contemporary, from New Jersey. Deep library with good variety across eras.
-      tags: [deep-work, research, docs, contemplative, variety]
     - name: France Musique
       url: http://direct.francemusique.fr/live/francemusique-midfi.mp3
       description: France's national public radio devoted to classical music. European classical tradition with excellent orchestral programming.
       tags: [orchestral, contemplative, elegant, deep-work, focus]
-    - name: IPR Classical
-      url: http://classical-stream.iowapublicradio.org/Classical.mp3
-      description: Iowa Public Radio's 24-hour classical music stream. Accessible programming, good for sustained focus.
-      tags: [focus, concentration, accessible, steady, calm]
 
 ambient:
   stations:

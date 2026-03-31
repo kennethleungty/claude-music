@@ -132,7 +132,7 @@ init_prefs() {
     if [ ! -f "$PREFS_FILE" ]; then
         cat > "$PREFS_FILE" <<'EOF'
 {
-  "genre": "ambient",
+  "genre": "lofi",
   "volume": "30",
   "autoplay": "false",
   "player": "auto",
@@ -447,12 +447,19 @@ save_state() {
         prev_url=$(json_get "$STATE_FILE" "prev_url" 2>/dev/null || echo "")
     fi
 
-    # If starting fresh playback (not already playing), reset session tracking
-    if [ "$status" = "playing" ] && [ -z "$session_start" ]; then
-        session_start=$(date +%s)
-        station_count="1"
-    elif [ "$status" = "playing" ]; then
-        station_count=$(( station_count + 1 ))
+    # If starting fresh playback, reset session tracking.
+    # "Fresh" means: session_start is empty, OR the previous player is no longer alive
+    # (e.g. it crashed or was killed). This prevents stale session_start values from
+    # accumulating across broken sessions into an inflated duration.
+    if [ "$status" = "playing" ]; then
+        local prev_pid
+        prev_pid=$(json_get "$STATE_FILE" "pid" 2>/dev/null || echo "")
+        if [ -z "$session_start" ] || { [ -n "$prev_pid" ] && ! kill -0 "$prev_pid" 2>/dev/null; }; then
+            session_start=$(date +%s)
+            station_count="1"
+        else
+            station_count=$(( station_count + 1 ))
+        fi
     fi
 
     # On stop, keep session_start for stats calculation
@@ -628,11 +635,11 @@ do_play() {
         if [ -n "$genre" ]; then
             genre_reason="preference"
         else
-            genre="ambient"
+            genre="lofi"
             genre_reason="default"
         fi
     fi
-    [ -z "$genre" ] && genre="ambient"
+    [ -z "$genre" ] && genre="lofi"
 
     # Stop existing playback (tracked + orphaned)
     kill_player
@@ -985,8 +992,8 @@ print(json.dumps(session))
 
 do_next() {
     local genre current_url
-    genre=$(json_get "$STATE_FILE" "genre" 2>/dev/null || echo "ambient")
-    [ -z "$genre" ] && genre="ambient"
+    genre=$(json_get "$STATE_FILE" "genre" 2>/dev/null || echo "lofi")
+    [ -z "$genre" ] && genre="lofi"
     current_url=$(json_get "$STATE_FILE" "url" 2>/dev/null || echo "")
 
     # Play a different stream, excluding the current one
@@ -995,8 +1002,8 @@ do_next() {
 
 do_prev() {
     local genre prev_url
-    genre=$(json_get "$STATE_FILE" "genre" 2>/dev/null || echo "ambient")
-    [ -z "$genre" ] && genre="ambient"
+    genre=$(json_get "$STATE_FILE" "genre" 2>/dev/null || echo "lofi")
+    [ -z "$genre" ] && genre="lofi"
     prev_url=$(json_get "$STATE_FILE" "prev_url" 2>/dev/null || echo "")
 
     if [ -z "$prev_url" ]; then
@@ -1069,7 +1076,7 @@ for genre in data:
         echo "lofi"
         echo "jazz"
         echo "classical"
-        echo "ambient"
+        echo "lofi"
     fi
 }
 
@@ -1090,7 +1097,7 @@ do_reset_prefs() {
     ensure_data_dir
     cat > "$PREFS_FILE" <<'EOF'
 {
-  "genre": "ambient",
+  "genre": "lofi",
   "volume": "30",
   "autoplay": "false",
   "player": "auto",

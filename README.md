@@ -21,7 +21,7 @@ No setup, no sign ups, no accounts. Just install the plugin and start listening.
 ## Quick Start
 
 ```
-/play                # Start playing (ambient genre by default)
+/play                # Start playing (lofi genre by default)
 /play jazz           # Play a specific genre or station name
 /next                # Skip to a different station (same genre)
 /prev                # Go back to the previous station
@@ -83,7 +83,7 @@ The plugin includes a resident AI DJ (DJ Ken) that picks the right music for you
 |-------|------|-----------|----------|
 | **lofi** | Chill downtempo beats, mellow vibes | Focused coding, debugging, writing tests | 3 |
 | **jazz** | Smooth jazz, bossa nova, instrumental | Building features, refactoring | 4 |
-| **classical** | Orchestral, chamber music, deep focus | Code review, reading, research | 5 |
+| **classical** | Orchestral, chamber music, deep focus | Code review, reading, research | 3 |
 | **ambient** | Atmospheric drones, space music | Brainstorming, design, creative work | 6 |
 | **electronic** | Electronic, trance, IDM, dubstep, trip-hop | Shipping sprints, high-energy sessions | 6 |
 | **synthwave** | Retro-futuristic, 80s-inspired | Late night coding, nostalgic vibes | 3 |
@@ -147,7 +147,7 @@ The status line at the bottom of your terminal shows what's currently playing �
 
 Your settings are saved automatically and persist locally across sessions:
 
-- **Genre** — your preferred default (ambient by default when fresh start)
+- **Genre** — your preferred default (lofi by default when fresh start)
 - **Volume** — 0 to 100 (changed via `/volume`)
 
 </details>
@@ -159,7 +159,7 @@ All streams are free, ad-free, and require no account. The station library is a 
 
 - **Lofi** — Lofi Girl, Chillhop Music, Groove Salad
 - **Jazz** — Coffee Shop Radio, SomaFM Fluid, Bossa Beyond, WDCB Jazz
-- **Classical** — Classical Radio, All Classical Portland, WWFM, France Musique, IPR Classical
+- **Classical** — Classical Piano & Fireplace, All Classical Portland, France Musique
 - **Ambient** — Relaxing Ambient, SomaFM Drone Zone, Deep Space One, Mission Control, Dark Zone, Stereoscenic Ambient
 - **Electronic** — Beat Blender, The Trip, Cliqhop IDM, Dub Step Beyond, Suburbs of Goa, Groove Salad Classic
 - **Synthwave** — Synthwave Radio, Nightwave Plaza, SomaFM Synphaera
