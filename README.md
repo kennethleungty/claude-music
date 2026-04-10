@@ -14,9 +14,9 @@ Enjoy great music and vibes while Claude Code does the heavy lifting. Lofi, jazz
 
 No setup, no sign ups, no accounts. Just install the plugin and start listening.
 
-<!-- <p align="center">
-  <img src="assets/demo.gif" alt="claude-music demo" width="600">
-</p> -->
+<p align="center">
+  <img src="docs/demo.gif" alt="claude-music demo" width="600">
+</p>
 
 ## Quick Start
 
