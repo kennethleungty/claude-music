@@ -182,7 +182,7 @@ All streams should be free, ad-free, and publicly accessible.
 
 Make music that's perfect for coding? We're always looking for new streams to feature.
 
-Thousands of developers listen to music through this plugin while building with Claude Code. If you produce lofi, ambient, jazz, electronic, or anything that pairs well with deep focus — your music could be the soundtrack to real work getting shipped.
+This plugin plays background music during Claude Code sessions. If you produce lofi, ambient, jazz, electronic, or anything that pairs well with deep focus, your music could reach developers while they're actually in flow.
 
 **To get featured**, [open an issue](../../issues/new) with:
 
